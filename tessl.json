@@ -1,10 +1,10 @@
 {
-  "name": "sink",
+  "name": "faucet/sink",
   "mode": "vendored",
+  "dependencies": {},
   "agents": [
     "claude-code"
   ],
-  "dependencies": {},
   "schedules": {
     "daily-tile": {
       "skill": "faucet/daily-tile",
