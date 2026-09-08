@@ -13,7 +13,7 @@
       "environment": "sink-env",
       "agent": "claude-code",
       "model": "claude-sonnet-4-6",
-      "description": "Colour one new bathroom wall tile each day"
+      "description": "Colour one new bathroom wall tile each day, pushing directly to main"
     }
   }
 }
