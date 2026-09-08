@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Faucet Simulation</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  width: 100vw; height: 100vh;
+  overflow: hidden;
+  font-family: sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+canvas#mainCanvas {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+}
+</style>
+</head>
+<body>
+<canvas id="mainCanvas"></canvas>
+<script src="tiles.js"></script>
+<script>
+(function() {
+  const canvas = document.getElementById('mainCanvas');
+  const ctx = canvas.getContext('2d');
+
+  let W, H;
+  function resize() {
+    W = canvas.width = window.innerWidth * devicePixelRatio;
+    H = canvas.height = window.innerHeight * devicePixelRatio;
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+  }
+  resize();
+  window.addEventListener('resize', () => {
+    ctx.setTransform(1,0,0,1,0,0);
+    resize();
+  });
+
+  const w = () => window.innerWidth;
+  const h = () => window.innerHeight;
+
+  // Layout
+  const PLATE_W = 380, PLATE_H = 160;
+  const plateX = () => w()/2 - PLATE_W/2;
+  const plateY = () => h()/2 - PLATE_H/2 - 40;
+
+  // Handle geometry
+  const HANDLE_RADIUS = 28;
+  const STEM_LEN = 40;
+  const CROSS_LEN = 24;
+
+  // State
+  let hotAngle = 0;   // 0 = off, goes to PI (180 deg) = full
+  let coldAngle = 0;
+  let dragging = null; // 'hot' | 'cold'
+  let dragLastAngle = 0;
+
+  // Handle centers
+  function hotCenter() {
+    const px = plateX(), py = plateY();
+    return { x: px + 70, y: py + PLATE_H/2 };
+  }
+  function coldCenter() {
+    const px = plateX(), py = plateY();
+    return { x: px + PLATE_W - 70, y: py + PLATE_H/2 };
+  }
+
+  // Spout position (center of plate)
+  function spoutPos() {
+    const px = plateX(), py = plateY();
+    return { x: px + PLATE_W/2, y: py + PLATE_H/2 - 20 };
+  }
+
+  // --- Drawing ---
+
+  function drawPlate() {
+    const px = plateX(), py = plateY();
+    ctx.save();
+
+    // Shadow
+    ctx.shadowColor = 'rgba(0,0,0,0.25)';
+    ctx.shadowBlur = 15;
+    ctx.shadowOffsetY = 4;
+
+    // Main plate
+    const grad = ctx.createLinearGradient(px, py, px, py + PLATE_H);
+    grad.addColorStop(0, '#d8d8d8');
+    grad.addColorStop(0.5, '#c0c0c0');
+    grad.addColorStop(1, '#a0a0a0');
+    ctx.fillStyle = grad;
+    roundRect(ctx, px, py, PLATE_W, PLATE_H, 16);
+    ctx.fill();
+
+    ctx.shadowColor = 'transparent';
+
+    // Border
+    ctx.strokeStyle = '#888';
+    ctx.lineWidth = 1;
+    roundRect(ctx, px, py, PLATE_W, PLATE_H, 16);
+    ctx.stroke();
+
+    // Top highlight
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(px + 20, py + 1.5);
+    ctx.lineTo(px + PLATE_W - 20, py + 1.5);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function drawHandle(cx, cy, angle, label, labelColor) {
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    // Base disc
+    const baseGrad = ctx.createRadialGradient(-5, -5, 2, 0, 0, 32);
+    baseGrad.addColorStop(0, '#ccc');
+    baseGrad.addColorStop(1, '#888');
+    ctx.fillStyle = baseGrad;
+    ctx.beginPath(); ctx.arc(0, 0, 32, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#777';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(0, 0, 32, 0, Math.PI*2); ctx.stroke();
+
+    // Rotated cross
+    ctx.save();
+    ctx.rotate(angle);
+
+    // Cross arms
+    const armW = 10, armLen = CROSS_LEN;
+    const armGrad = ctx.createLinearGradient(-armW/2, 0, armW/2, 0);
+    armGrad.addColorStop(0, '#aaa');
+    armGrad.addColorStop(0.5, '#e0e0e0');
+    armGrad.addColorStop(1, '#aaa');
+
+    ctx.fillStyle = armGrad;
+    // Horizontal
+    roundRect(ctx, -armLen, -armW/2, armLen*2, armW, 4);
+    ctx.fill();
+    // Vertical
+    roundRect(ctx, -armW/2, -armLen, armW, armLen*2, 4);
+    ctx.fill();
+
+    // Center cap
+    const capGrad = ctx.createRadialGradient(-2, -2, 1, 0, 0, 10);
+    capGrad.addColorStop(0, '#ddd');
+    capGrad.addColorStop(1, '#999');
+    ctx.fillStyle = capGrad;
+    ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI*2); ctx.fill();
+
+    // Arm tips
+    [0, Math.PI/2, Math.PI, Math.PI*1.5].forEach(a => {
+      const tx = Math.cos(a) * armLen;
+      const ty = Math.sin(a) * armLen;
+      ctx.fillStyle = '#b0b0b0';
+      ctx.beginPath(); ctx.arc(tx, ty, 5, 0, Math.PI*2); ctx.fill();
+    });
+
+    ctx.restore();
+
+    // Label
+    ctx.fillStyle = labelColor;
+    ctx.font = '600 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.letterSpacing = '1px';
+    ctx.fillText(label, 0, 52);
+
+    ctx.restore();
+  }
+
+  function drawSpout() {
+    const sp = spoutPos();
+    const sx = sp.x, sy = sp.y;
+
+    ctx.save();
+
+    // Neck coming out of plate
+    const neckW = 30, neckH = 28;
+    const neckGrad = ctx.createLinearGradient(sx - neckW/2, 0, sx + neckW/2, 0);
+    neckGrad.addColorStop(0, '#999');
+    neckGrad.addColorStop(0.5, '#ccc');
+    neckGrad.addColorStop(1, '#999');
+    ctx.fillStyle = neckGrad;
+    ctx.fillRect(sx - neckW/2, sy - 5, neckW, neckH);
+
+    // Spout body — downward curved pipe
+    const spoutW = 36, spoutH = 50;
+    const bodyGrad = ctx.createLinearGradient(sx - spoutW/2, 0, sx + spoutW/2, 0);
+    bodyGrad.addColorStop(0, '#909090');
+    bodyGrad.addColorStop(0.3, '#c8c8c8');
+    bodyGrad.addColorStop(0.7, '#c0c0c0');
+    bodyGrad.addColorStop(1, '#888');
+    ctx.fillStyle = bodyGrad;
+    roundRect(ctx, sx - spoutW/2, sy + neckH - 8, spoutW, spoutH, 6);
+    ctx.fill();
+
+    // Spout opening at bottom
+    const openW = 28, openH = 8;
+    ctx.fillStyle = '#444';
+    roundRect(ctx, sx - openW/2, sy + neckH + spoutH - 14, openW, openH, 4);
+    ctx.fill();
+
+    // Highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillRect(sx - 4, sy + neckH - 4, 8, spoutH - 8);
+
+    ctx.restore();
+
+    // Return the water emission point
+    return { x: sx, y: sy + neckH + spoutH - 8 };
+  }
+
+  // --- Water particles ---
+  let waterParticles = [];
+  const MAX_PARTICLES = 600;
+
+  function spawnWater(emitX, emitY, flowRate, timestamp) {
+    if (flowRate < 0.01) return;
+
+    const count = Math.ceil(flowRate * 12);
+    for (let i = 0; i < count && waterParticles.length < MAX_PARTICLES; i++) {
+      const spread = flowRate < 0.3 ? 4 : 2;
+      waterParticles.push({
+        x: emitX + (Math.random() - 0.5) * spread,
+        y: emitY + Math.random() * 2,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: 1 + Math.random() * 2,
+        size: 1.5 + Math.random() * (1 + flowRate * 2),
+        life: 1,
+        born: timestamp
+      });
+    }
+  }
+
+  function updateParticles(dt) {
+    const gravity = 600;
+    for (let i = waterParticles.length - 1; i >= 0; i--) {
+      const p = waterParticles[i];
+      p.vy += gravity * dt;
+      p.x += p.vx * dt * 60;
+      p.y += p.vy * dt;
+
+      // Remove if off screen
+      if (p.y > h() + 20) {
+        waterParticles.splice(i, 1);
+      }
+    }
+  }
+
+  function drawWater(flowRate) {
+    if (waterParticles.length === 0) return;
+
+    const color = getWaterColor();
+
+    // Draw the main stream as connected segments for realism
+    // Sort by y for coherent stream look
+    const sorted = waterParticles.slice().sort((a, b) => a.y - b.y);
+
+    // Stream core
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    if (sorted.length > 2 && flowRate > 0.05) {
+      ctx.beginPath();
+      ctx.moveTo(sorted[0].x - 1, sorted[0].y);
+      for (let i = 1; i < sorted.length; i++) {
+        ctx.lineTo(sorted[i].x - 1, sorted[i].y);
+      }
+      for (let i = sorted.length - 1; i >= 0; i--) {
+        ctx.lineTo(sorted[i].x + 1, sorted[i].y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(' + color.r + ',' + color.g + ',' + color.b + ',0.15)';
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // Individual droplets
+    for (const p of waterParticles) {
+      const alpha = Math.min(0.7, 0.3 + flowRate * 0.3);
+      ctx.fillStyle = 'rgba(' + color.r + ',' + color.g + ',' + color.b + ',' + alpha + ')';
+      ctx.beginPath();
+      // Elongate fast-moving particles
+      const stretch = Math.min(p.vy * 0.008, 4);
+      ctx.ellipse(p.x, p.y, p.size * 0.7, p.size * (1 + stretch), 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Highlight on each drop
+      ctx.fillStyle = 'rgba(255,255,255,' + (alpha * 0.4) + ')';
+      ctx.beginPath();
+      ctx.arc(p.x - p.size * 0.2, p.y - p.size * 0.3, p.size * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // --- Steam ---
+  let steamParticles = [];
+  let lastSteamSpawn = 0;
+
+  function spawnSteam(x, y, flowRate, timestamp) {
+    const temp = getTemperature();
+    if (temp === null || temp <= 40 || flowRate < 0.05) return;
+    if (timestamp - lastSteamSpawn < 120) return;
+    lastSteamSpawn = timestamp;
+
+    const intensity = Math.min(1, (temp - 40) / 20);
+    const count = Math.ceil(intensity * 2);
+    for (let i = 0; i < count; i++) {
+      steamParticles.push({
+        x: x + (Math.random() - 0.5) * 30,
+        y: y - 5,
+        vx: (Math.random() - 0.5) * 20,
+        vy: -15 - Math.random() * 25,
+        size: 8 + Math.random() * 15,
+        life: 1,
+        maxLife: 1.5 + Math.random() * 1.5
+      });
+    }
+  }
+
+  function updateSteam(dt) {
+    for (let i = steamParticles.length - 1; i >= 0; i--) {
+      const p = steamParticles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.size += 12 * dt;
+      p.life -= dt / p.maxLife;
+      if (p.life <= 0) steamParticles.splice(i, 1);
+    }
+  }
+
+  function drawSteam() {
+    ctx.save();
+    for (const p of steamParticles) {
+      const alpha = p.life < 0.3 ? p.life / 0.3 : (p.life > 0.7 ? (1 - p.life) / 0.3 : 1);
+      ctx.globalAlpha = alpha * 0.12;
+      ctx.fillStyle = '#fff';
+      ctx.filter = 'blur(6px)';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.filter = 'none';
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  // --- Temperature ---
+  function getWaterColor() {
+    return { r: 90, g: 150, b: 220 };
+  }
+
+  function getTemperature() {
+    const total = hotAngle + coldAngle;
+    if (total === 0) return null;
+    return Math.round(10 + (hotAngle / total) * 50);
+  }
+
+  function drawTempDisplay(emitX, emitY, flowRate) {
+    if (flowRate < 0.01) return;
+    const temp = getTemperature();
+    if (temp === null) return;
+
+    const ratio = hotAngle / (hotAngle + coldAngle);
+    let bg;
+    if (ratio > 0.65) bg = 'rgba(180,40,40,0.75)';
+    else if (ratio < 0.35) bg = 'rgba(40,60,160,0.75)';
+    else bg = 'rgba(0,0,0,0.6)';
+
+    const text = temp + '\u00B0C';
+    ctx.font = '13px sans-serif';
+    const tw = ctx.measureText(text).width;
+    const px = emitX - tw/2 - 10;
+    const py = emitY - 50;
+
+    ctx.fillStyle = bg;
+    roundRect(ctx, px, py, tw + 20, 26, 8);
+    ctx.fill();
+
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, emitX, py + 13);
+  }
+
+  // --- Drag mechanics ---
+  // Track angle of pointer relative to handle center — the handle follows your hand
+
+  function getPointerAngle(cx, cy, ex, ey) {
+    return Math.atan2(ey - cy, ex - cx);
+  }
+
+  function onDown(e) {
+    e.preventDefault();
+    const ex = e.clientX || e.touches[0].clientX;
+    const ey = e.clientY || e.touches[0].clientY;
+
+    const hc = hotCenter();
+    const cc = coldCenter();
+
+    const dHot = Math.hypot(ex - hc.x, ey - hc.y);
+    const dCold = Math.hypot(ex - cc.x, ey - cc.y);
+
+    if (dHot < 45) {
+      dragging = 'hot';
+      dragLastAngle = getPointerAngle(hc.x, hc.y, ex, ey);
+    } else if (dCold < 45) {
+      dragging = 'cold';
+      dragLastAngle = getPointerAngle(cc.x, cc.y, ex, ey);
+    }
+  }
+
+  function onMove(e) {
+    if (!dragging) return;
+    e.preventDefault();
+    const ex = e.clientX || (e.touches && e.touches[0].clientX);
+    const ey = e.clientY || (e.touches && e.touches[0].clientY);
+    if (ex == null) return;
+
+    const center = dragging === 'hot' ? hotCenter() : coldCenter();
+    const angle = getPointerAngle(center.x, center.y, ex, ey);
+    let delta = angle - dragLastAngle;
+
+    // Normalize delta to -PI..PI
+    if (delta > Math.PI) delta -= Math.PI * 2;
+    if (delta < -Math.PI) delta += Math.PI * 2;
+
+    if (dragging === 'hot') {
+      // Counter-clockwise (negative delta) opens hot
+      hotAngle = Math.max(0, Math.min(Math.PI, hotAngle - delta));
+    } else {
+      // Clockwise (positive delta) opens cold
+      coldAngle = Math.max(0, Math.min(Math.PI, coldAngle + delta));
+    }
+
+    dragLastAngle = angle;
+  }
+
+  function onUp() { dragging = null; }
+
+  canvas.addEventListener('mousedown', onDown);
+  canvas.addEventListener('touchstart', onDown, { passive: false });
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('mouseup', onUp);
+  document.addEventListener('touchend', onUp);
+
+  // --- Utility ---
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  // --- Main loop ---
+  let lastTime = 0;
+
+  function frame(timestamp) {
+    const dt = lastTime ? Math.min((timestamp - lastTime) / 1000, 0.05) : 0.016;
+    lastTime = timestamp;
+
+    const flowRate = Math.min((hotAngle + coldAngle) / Math.PI, 1.5);
+
+    // Clear & draw background
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+    Tiles.draw(ctx, w(), h());
+
+    // Plate
+    drawPlate();
+
+    // Spout (returns emission point)
+    const emit = drawSpout();
+
+    // Handles
+    const hc = hotCenter(), cc = coldCenter();
+    drawHandle(hc.x, hc.y, -hotAngle, 'HOT', '#c44');
+    drawHandle(cc.x, cc.y, coldAngle, 'COLD', '#46a');
+
+    // Water
+    spawnWater(emit.x, emit.y, flowRate, timestamp);
+    updateParticles(dt);
+    drawWater(flowRate);
+
+    // Steam
+    spawnSteam(emit.x, emit.y, flowRate, timestamp);
+    updateSteam(dt);
+    drawSteam();
+
+    // Temp
+    drawTempDisplay(emit.x, emit.y, flowRate);
+
+    requestAnimationFrame(frame);
+  }
+
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
