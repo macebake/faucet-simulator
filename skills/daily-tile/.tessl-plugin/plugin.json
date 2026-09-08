@@ -1,0 +1,6 @@
+{
+  "name": "faucet/daily-tile",
+  "version": "0.1.0",
+  "description": "Colour one new tile in tiles.js each day",
+  "private": true
+}
