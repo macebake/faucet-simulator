@@ -9,7 +9,7 @@
     "daily-tile": {
       "skill": "faucet/daily-tile",
       "cron": "0 9 * * *",
-      "timezone": "Europe/London",
+      "timezone": "Europe/Dublin",
       "environment": "sink-env",
       "agent": "claude-code",
       "model": "claude-sonnet-4-6",
