@@ -14,27 +14,6 @@
       "agent": "claude-code",
       "model": "claude-sonnet-4-6",
       "description": "Colour one new bathroom wall tile each day, pushing directly to main"
-    },
-    "test-minimal": {
-      "skill": "faucet/daily-tile",
-      "cron": "0 0 31 12 *",
-      "environment": "sink-env"
-    },
-    "test-with-timezone": {
-      "skill": "faucet/daily-tile",
-      "cron": "0 0 25 12 *",
-      "timezone": "America/New_York",
-      "environment": "sink-env",
-      "description": "Christmas day test - minimal fields plus timezone"
-    },
-    "test-full-fields": {
-      "skill": "faucet/daily-tile",
-      "cron": "0 0 1 1 *",
-      "timezone": "Asia/Tokyo",
-      "environment": "sink-env",
-      "agent": "claude-code",
-      "model": "claude-sonnet-4-6",
-      "description": "New years day test - all optional fields populated"
     }
   }
 }
