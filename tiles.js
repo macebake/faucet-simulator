@@ -5,7 +5,8 @@ const Tiles = (function() {
   // Special tiles: array of { col, row, color }
   const specialTiles = [
     { col: 0, row: 0, color: '#b8c8d8' },
-    { col: 1, row: 0, color: '#d4c0a0' }
+    { col: 1, row: 0, color: '#d4c0a0' },
+    { col: 2, row: 0, color: '#a8b8a0' }
   ];
 
   function draw(ctx, width, height) {
