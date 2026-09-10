@@ -1,5 +1,5 @@
 {
-  "name": "nonexistent-workspace/sink",
+  "name": "faucet/sink",
   "mode": "vendored",
   "dependencies": {},
   "agents": [
