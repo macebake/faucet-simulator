@@ -6,7 +6,7 @@
     "claude-code"
   ],
   "schedules": {
-    "daily-tile": {
+    "daily-tile-renamed": {
       "skill": "faucet/daily-tile",
       "cron": "0 9 * * *",
       "timezone": "Europe/Dublin",
