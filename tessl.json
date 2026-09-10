@@ -20,9 +20,10 @@
       "cron": "0 0 31 12 *",
       "environment": "sink-env"
     },
-    "test-no-env": {
+    "daily-tile": {
       "skill": "faucet/daily-tile",
-      "cron": "0 0 31 12 *"
+      "cron": "0 0 31 12 *",
+      "environment": "sink-env"
     }
   }
 }
