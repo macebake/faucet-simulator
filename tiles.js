@@ -7,7 +7,8 @@ const Tiles = (function() {
     { col: 0, row: 0, color: '#b8c8d8' },
     { col: 1, row: 0, color: '#d4c0a0' },
     { col: 2, row: 0, color: '#a8b8a0' },
-    { col: 3, row: 0, color: '#c8a898' }
+    { col: 3, row: 0, color: '#c8a898' },
+    { col: 4, row: 0, color: '#b0a8c0' }
   ];
 
   function draw(ctx, width, height) {
