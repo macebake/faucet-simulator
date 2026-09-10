@@ -1,4 +1,5 @@
 {
+  "name": "sink",
   "mode": "vendored",
   "dependencies": {},
   "agents": [
