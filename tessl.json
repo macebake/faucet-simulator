@@ -1,5 +1,4 @@
 {
-  "name": "faucet/sink",
   "mode": "vendored",
   "dependencies": {},
   "agents": [
