@@ -8,12 +8,74 @@
   "schedules": {
     "daily-tile": {
       "skill": "faucet/daily-tile",
-      "cron": "0 9 * * *",
+      "cron": "daily at 09:00",
       "timezone": "Europe/Dublin",
       "environment": "sink-env",
       "agent": "claude-code",
       "model": "claude-sonnet-4-6",
       "description": "Colour one new bathroom wall tile each day, pushing directly to main"
+    },
+    "test-shorthand-weekdays": {
+      "skill": "faucet/daily-tile",
+      "cron": "weekdays at 23:55",
+      "timezone": "Pacific/Auckland",
+      "environment": "sink-env",
+      "description": "Test: shorthand weekdays with timezone"
+    },
+    "test-shorthand-weekly": {
+      "skill": "faucet/daily-tile",
+      "cron": "weekly on Friday at 23:50",
+      "environment": "sink-env",
+      "description": "Test: shorthand weekly"
+    },
+    "test-shorthand-monthly": {
+      "skill": "faucet/daily-tile",
+      "cron": "monthly on 28th at 23:45",
+      "environment": "sink-env",
+      "description": "Test: shorthand monthly"
+    },
+    "test-shorthand-interval": {
+      "skill": "faucet/daily-tile",
+      "cron": "every 30 minutes between 23:00-23:30",
+      "environment": "sink-env",
+      "description": "Test: interval with time window"
+    },
+    "test-shorthand-every-hours": {
+      "skill": "faucet/daily-tile",
+      "cron": "every 6 hours",
+      "environment": "sink-env",
+      "description": "Test: every N hours"
+    },
+    "test-shorthand-weekday-interval": {
+      "skill": "faucet/daily-tile",
+      "cron": "every 15 minutes on weekdays",
+      "environment": "sink-env",
+      "description": "Test: interval on weekdays only"
+    },
+    "test-shorthand-hourly": {
+      "skill": "faucet/daily-tile",
+      "cron": "hourly",
+      "environment": "sink-env",
+      "description": "Test: hourly shorthand"
+    },
+    "test-object-weekends": {
+      "skill": "faucet/daily-tile",
+      "cron": {
+        "minute": 55,
+        "hour": 23,
+        "weekday": [6, 0]
+      },
+      "environment": "sink-env",
+      "description": "Test: object notation, weekends only"
+    },
+    "test-object-every": {
+      "skill": "faucet/daily-tile",
+      "cron": {
+        "minute": { "every": 20 },
+        "hour": { "between": [9, 17] }
+      },
+      "environment": "sink-env",
+      "description": "Test: object notation with every and between"
     }
   }
 }
