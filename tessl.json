@@ -6,7 +6,7 @@
     "claude-code"
   ],
   "schedules": {
-    "daily-tile-renamed": {
+    "daily-tile": {
       "skill": "faucet/daily-tile",
       "cron": "0 9 * * *",
       "timezone": "Europe/Dublin",
@@ -15,3 +15,5 @@
       "model": "claude-sonnet-4-6",
       "description": "Colour one new bathroom wall tile each day, pushing directly to main"
     }
+  }
+}
