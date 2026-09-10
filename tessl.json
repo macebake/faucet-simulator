@@ -14,12 +14,6 @@
       "agent": "claude-code",
       "model": "claude-sonnet-4-6",
       "description": "Colour one new bathroom wall tile each day, pushing directly to main"
-    },
-    "test-shorthand-daily": {
-      "skill": "faucet/daily-tile",
-      "cron": "daily at 23:55",
-      "environment": "sink-env",
-      "description": "Test: does shorthand survive the backend?"
     }
   }
 }
