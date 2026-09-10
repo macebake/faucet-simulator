@@ -1,5 +1,5 @@
 {
-  "name": "sink",
+  "name": "faucet/ghost-project",
   "mode": "vendored",
   "dependencies": {},
   "agents": [
