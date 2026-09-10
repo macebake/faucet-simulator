@@ -19,6 +19,11 @@
       "skill": "faucet/daily-tile",
       "cron": "0 0 31 12 *",
       "environment": "sink-env"
+    },
+    "test-bad-env": {
+      "skill": "faucet/daily-tile",
+      "cron": "0 0 31 12 *",
+      "environment": "does-not-exist"
     }
   }
 }
