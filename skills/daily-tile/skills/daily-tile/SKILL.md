@@ -49,11 +49,18 @@ Keep the formatting consistent: two-space indent, trailing comma on every line.
 
 ## How to commit and push
 
-1. First, configure git to authenticate with the GH_TOKEN from the environment:
-   `git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/macebake/faucet-simulator.git`
-2. Stage only `tiles.js`: `git add tiles.js`
-3. Commit with the message: `tile <N>: #<hex>` (e.g. `tile 2: #c4a8b0`)
-4. Push directly to main: `git push origin main`
+The default git credentials do NOT have push access. You MUST use the GH_TOKEN environment variable to authenticate. Follow these steps exactly:
+
+1. Run this command to set the remote URL with token auth (this is critical — do not skip):
+   ```
+   git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/macebake/faucet-simulator.git"
+   ```
+2. Verify the remote was updated: `git remote -v` (it should show the token URL)
+3. Stage only `tiles.js`: `git add tiles.js`
+4. Commit with the message: `tile <N>: #<hex>` (e.g. `tile 2: #c4a8b0`)
+5. Push directly to main: `git push origin main`
+
+If the push fails with a 403 or permission error, the GH_TOKEN was not applied. Debug by checking `echo $GH_TOKEN` is set and `git remote -v` shows the token URL.
 
 Do NOT create a branch. Do NOT open a PR. Push to main.
 
