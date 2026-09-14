@@ -49,9 +49,11 @@ Keep the formatting consistent: two-space indent, trailing comma on every line.
 
 ## How to commit and push
 
-1. Stage only `tiles.js`: `git add tiles.js`
-2. Commit with the message: `tile <N>: #<hex>` (e.g. `tile 2: #c4a8b0`)
-3. Push directly to main: `git push origin main`
+1. First, configure git to authenticate with the GH_TOKEN from the environment:
+   `git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/macebake/faucet-simulator.git`
+2. Stage only `tiles.js`: `git add tiles.js`
+3. Commit with the message: `tile <N>: #<hex>` (e.g. `tile 2: #c4a8b0`)
+4. Push directly to main: `git push origin main`
 
 Do NOT create a branch. Do NOT open a PR. Push to main.
 
