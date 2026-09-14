@@ -8,12 +8,18 @@
   "schedules": {
     "daily-tile-v2": {
       "skill": "faucet/daily-tile",
-      "cron": "0 9 * * *",
+      "cron": "0 10 * * *",
       "timezone": "Europe/Dublin",
       "environment": "sink-env",
       "agent": "claude-code",
       "model": "claude-sonnet-4-6",
       "description": "Colour one new bathroom wall tile each day, pushing directly to main"
+    },
+    "bad-schedule": {
+      "skill": "faucet/daily-tile",
+      "cron": "*/2 * * * *",
+      "environment": "sink-env",
+      "description": "This should fail - 2 minute interval is below the 5 minute minimum"
     }
   }
 }
