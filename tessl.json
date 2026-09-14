@@ -19,7 +19,7 @@
       "skill": "faucet/daily-tile",
       "cron": "*/2 * * * *",
       "environment": "sink-env",
-      "description": "This should fail - 2 minute interval is below the 5 minute minimum"
+      "description": "This should fail - two minute interval is below the five minute minimum"
     }
   }
 }
