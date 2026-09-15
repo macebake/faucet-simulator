@@ -14,12 +14,6 @@
       "agent": "claude-code",
       "model": "claude-sonnet-4-6",
       "description": "Colour one new bathroom wall tile each day and push directly to main"
-    },
-    "bad-schedule": {
-      "skill": "faucet/daily-tile",
-      "cron": "*/2 * * * *",
-      "environment": "sink-env",
-      "description": "This should fail - two minute interval is below the five minute minimum"
     }
   }
 }
