@@ -391,6 +391,94 @@ canvas#mainCanvas {
     ctx.fillText(text, emitX, py + 13);
   }
 
+  // --- Screen fog (condensation) ---
+  let fogOpacity = 0;
+  let fogDroplets = []; // condensation droplets on the "glass"
+
+  function updateFog(dt, flowRate) {
+    const temp = getTemperature();
+    if (temp !== null && temp > 45 && flowRate > 0.05) {
+      const intensity = Math.min(1, (temp - 45) / 15);
+      fogOpacity = Math.min(0.55, fogOpacity + intensity * 0.03 * dt);
+      // Spawn condensation droplets
+      if (Math.random() < intensity * dt * 8) {
+        fogDroplets.push({
+          x: Math.random() * w(),
+          y: Math.random() * h() * 0.7,
+          size: 1 + Math.random() * 3,
+          vy: 0.2 + Math.random() * 0.5,
+          life: 1
+        });
+      }
+    } else {
+      fogOpacity = Math.max(0, fogOpacity - 0.15 * dt);
+    }
+
+    // Update droplets — they slide down slowly
+    for (let i = fogDroplets.length - 1; i >= 0; i--) {
+      const d = fogDroplets[i];
+      d.y += d.vy;
+      d.size += 0.01;
+      d.life -= dt * 0.08;
+      if (d.life <= 0 || d.y > h()) fogDroplets.splice(i, 1);
+    }
+    // Cap droplet count
+    if (fogDroplets.length > 200) fogDroplets.splice(0, fogDroplets.length - 200);
+  }
+
+  function drawFog() {
+    if (fogOpacity <= 0 && fogDroplets.length === 0) return;
+
+    ctx.save();
+
+    // Full-screen fog layer
+    if (fogOpacity > 0) {
+      ctx.globalAlpha = fogOpacity;
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.filter = 'blur(30px)';
+      ctx.fillRect(0, 0, w(), h());
+      ctx.filter = 'none';
+    }
+
+    // Condensation droplets
+    ctx.globalAlpha = 1;
+    for (const d of fogDroplets) {
+      const alpha = d.life * 0.35;
+      ctx.fillStyle = 'rgba(255,255,255,' + alpha + ')';
+      ctx.beginPath();
+      ctx.ellipse(d.x, d.y, d.size * 0.7, d.size, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Tiny highlight
+      ctx.fillStyle = 'rgba(255,255,255,' + (alpha * 0.8) + ')';
+      ctx.beginPath();
+      ctx.arc(d.x - d.size * 0.2, d.y - d.size * 0.3, d.size * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  // --- Water interaction (swipe through stream) ---
+  let pointerX = null, pointerY = null;
+  let prevPointerX = null, prevPointerY = null;
+  let pointerDown = false;
+
+  function scatterWaterNearPointer(px, py, pvx, pvy) {
+    const RADIUS = 30;
+    const FORCE = 6;
+    for (const p of waterParticles) {
+      const dx = p.x - px;
+      const dy = p.y - py;
+      const dist = Math.hypot(dx, dy);
+      if (dist < RADIUS && dist > 0) {
+        const strength = (1 - dist / RADIUS) * FORCE;
+        // Push away from pointer + inherit swipe velocity
+        p.vx += (dx / dist) * strength * 40 + pvx * 0.3;
+        p.vy += (dy / dist) * strength * 10 + pvy * 0.1;
+      }
+    }
+  }
+
   // --- Drag mechanics ---
   // Track angle of pointer relative to handle center — the handle follows your hand
 
@@ -402,6 +490,10 @@ canvas#mainCanvas {
     e.preventDefault();
     const ex = e.clientX || e.touches[0].clientX;
     const ey = e.clientY || e.touches[0].clientY;
+
+    pointerDown = true;
+    pointerX = ex; pointerY = ey;
+    prevPointerX = ex; prevPointerY = ey;
 
     const hc = hotCenter();
     const cc = coldCenter();
@@ -419,11 +511,24 @@ canvas#mainCanvas {
   }
 
   function onMove(e) {
-    if (!dragging) return;
-    e.preventDefault();
     const ex = e.clientX || (e.touches && e.touches[0].clientX);
     const ey = e.clientY || (e.touches && e.touches[0].clientY);
     if (ex == null) return;
+
+    prevPointerX = pointerX; prevPointerY = pointerY;
+    pointerX = ex; pointerY = ey;
+
+    // Scatter water on swipe (whether or not we're dragging a handle)
+    if (pointerDown && prevPointerX != null) {
+      const pvx = pointerX - prevPointerX;
+      const pvy = pointerY - prevPointerY;
+      if (Math.hypot(pvx, pvy) > 1) {
+        scatterWaterNearPointer(pointerX, pointerY, pvx, pvy);
+      }
+    }
+
+    if (!dragging) return;
+    e.preventDefault();
 
     const center = dragging === 'hot' ? hotCenter() : coldCenter();
     const angle = getPointerAngle(center.x, center.y, ex, ey);
@@ -444,7 +549,10 @@ canvas#mainCanvas {
     dragLastAngle = angle;
   }
 
-  function onUp() { dragging = null; }
+  function onUp() {
+    dragging = null;
+    pointerDown = false;
+  }
 
   canvas.addEventListener('mousedown', onDown);
   canvas.addEventListener('touchstart', onDown, { passive: false });
@@ -505,6 +613,10 @@ canvas#mainCanvas {
 
     // Temp
     drawTempDisplay(emit.x, emit.y, flowRate);
+
+    // Screen fog / condensation
+    updateFog(dt, flowRate);
+    drawFog();
 
     requestAnimationFrame(frame);
   }
