@@ -24,7 +24,8 @@ const Tiles = (function() {
     { col: 17, row: 0, color: '#c4a8b4' },
     { col: 18, row: 0, color: '#b0b8a8' },
     { col: 19, row: 0, color: '#c8b090' },
-    { col: 20, row: 0, color: '#9eb8c4' }
+    { col: 20, row: 0, color: '#9eb8c4' },
+    { col: 21, row: 0, color: '#a8c4b0' }
   ];
 
   function draw(ctx, width, height) {
